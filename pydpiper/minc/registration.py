@@ -1251,13 +1251,15 @@ def minctracc(source: MincAtom,
 
 
 SimilarityMetricConf = NamedTuple('SimilarityMetricConf',
-                                  [("metric", str),
+                                  [("blur", float),
+                                   ("metric", str),
                                    ("weight", float),
                                    ("radius_or_bins", int),
                                    ("use_gradient_image", bool)])
 
 
 default_similarity_metric_conf = SimilarityMetricConf(
+    blur=0,
     metric="CC",
     weight=1.0,
     radius_or_bins=3,
@@ -1435,7 +1437,7 @@ def parse_mincANTS_protocol_file(config_file,
         # TODO: why is this not being used anymore? It allows you to specify what you want
         # TODO: to do with the similarity metrics. Not sure whether we should have hard coded
         # TODO: defaults for this?
-        del d["blur"]
+        # del d["blur"]
     if "memory_required" in d:
         print("Warning: don't currently use the memory ...")  # doesn't have to be same length -> can crash code below
         del d["memory_required"]
@@ -1446,7 +1448,7 @@ def parse_mincANTS_protocol_file(config_file,
     # convert a mapping of options to _single_ values to a single-generation ANTS configuration object:
     def convert_single_gen(single_gen_params, file_resolution) -> MincANTSConf:  # TODO name this better ...
         # TODO check for/catch IndexError ... a bit hard to use zip since some params may not be defined ...
-        sim_metric_names = {"use_gradient_image", "metric", "weight", "radius_or_bins"}
+        sim_metric_names = {"use_gradient_image", "metric", "weight", "radius_or_bins","blur"}
         # TODO duplication; e.g., parsers = sim_metric_parsers U <...>
         sim_metric_params = {k : v for k, v in single_gen_params.items() if k in sim_metric_names}
         other_attrs       = {k : v for k, v in single_gen_params.items() if k not in sim_metric_names}
@@ -1524,8 +1526,8 @@ def ANTS(source: MincAtom,
     # TODO: similarity_inputs should be a set, but `MincAtom`s aren't hashable
     for sim_metric_conf in conf.sim_metric_confs:
         if conf.file_resolution is not None and sim_metric_conf.use_gradient_image:
-            src = s.defer(mincblur(source, fwhm=conf.file_resolution)).gradient
-            dest = s.defer(mincblur(target, fwhm=conf.file_resolution)).gradient
+            src = s.defer(mincblur(source, fwhm=sim_metric_conf.blur)).gradient
+            dest = s.defer(mincblur(target, fwhm=sim_metric_conf.blur)).gradient
         elif conf.file_resolution is None and sim_metric_conf.use_gradient_image:
             # the file resolution is not set, however we want to use the gradients
             # for this similarity metric...
