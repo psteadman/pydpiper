@@ -13,6 +13,8 @@ from pydpiper.minc.files import MincAtom
 from pydpiper.execution.application import mk_application
 from pydpiper.core.arguments import (nlin_parser, stats_parser)
 
+from pydpiper.pipelines.MAGeT import get_imgs
+
 
 # TODO in some sense all the code here (as with LSQ6_pipeline, LSQ12_pipeline) is redundant:
 # `NLIN_pipeline` should be expressible as a special case of `mbm_pipeline` by turning off certain parts
@@ -20,8 +22,8 @@ from pydpiper.core.arguments import (nlin_parser, stats_parser)
 
 def NLIN_pipeline(options):
 
-    if options.application.files is None:
-        raise ValueError("Please, some files! (or try '--help')")  # TODO make a util procedure for this
+    # if options.application.files is None:
+    #     raise ValueError("Please, some files! (or try '--help')")  # TODO make a util procedure for this
 
     output_dir    = options.application.output_directory
     pipeline_name = options.application.pipeline_name
@@ -33,7 +35,9 @@ def NLIN_pipeline(options):
     resolution = (options.registration.resolution  # TODO does using the finest resolution here make sense?
                   or min([get_resolution_from_file(f) for f in options.application.files]))
 
-    imgs = [MincAtom(f, pipeline_sub_dir=processed_dir) for f in options.application.files]
+    imgs = get_imgs(options.application)
+
+    # imgs = [MincAtom(f, pipeline_sub_dir=processed_dir) for f in options.application.files]
 
     # determine NLIN settings by overriding defaults with
     # any settings present in protocol file, if it exists
